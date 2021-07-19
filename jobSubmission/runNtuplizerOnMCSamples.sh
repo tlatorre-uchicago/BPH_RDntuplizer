@@ -32,7 +32,7 @@ output=$HOME/BPhysics/data/cmsMC
 
 for process in "${processes[@]}"; do
     echo $process
-    output_dir=$output/$process/ntuples/
+    output_dir=$output/$process/ntuples/B2DstMu
     if [ -d "$output_dir" ]; then
 	echo "skipping $process because $output_dir exists";
     else
