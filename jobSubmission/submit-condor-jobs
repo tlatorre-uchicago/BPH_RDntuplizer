@@ -4,6 +4,25 @@ from subprocess import check_call, check_output
 from os.path import join
 import subprocess
 import json
+"""
+This is a short script to help manage submitting jobs to the grid. To submit
+jobs first run the submitCMSSWCondorJobs.py script:
+
+    $ process="CP_BdToDstarMuNu_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen"
+    $ python jobSubmission/submitCMSSWCondorJobs.py -i production/inputFiles_$process.txt -o ~/BPhysics/$process/ntuples/out_CAND.root -c config/cmssw_centralMC_Tag_B_MuDst-PiPiK.py --maxtime 30m -N 5 -f
+
+or use the runNtuplizerOnMCSamples.sh shell script:
+
+    $ sh jobSubmission/runNtuplizerOnMCSamples.sh
+
+This will create all the submit files necessary and add entries to a sqlite database ~/state.db. Next, you can run this script to actually submit the jobs to condor:
+
+    $ python jobSubmission/submit-condor-jobs --max-jobs 100 --log-level verbose --logfile ~/submit.log
+
+Currently this script will *not* automatically resubmit any jobs but will
+instead mark any jobs that failed, and the user can then update the database to
+mark these as "RETRY".
+"""
 
 log = Logger()
 
@@ -205,4 +224,3 @@ if __name__ == '__main__':
     except Exception as e:
         log.warn(traceback.format_exc())
         sys.exit(1)
-    sys.exit(0)
