@@ -176,7 +176,22 @@ def main(conn, max_jobs):
                 # Don't know what to do here for Removed or Submission_err
                 log.warn("Job %i is in the state %i. Don't know what to do." % (id, job_status))
         elif state == 'RETRY':
-            pass
+            if njobs >= max_jobs:
+                log.verbose("Skipping job %i because there are already %i jobs in the queue" % (id,njobs))
+                continue
+
+            log.notice("resubmitting %s\n" % submit_file)
+            cmd = ['condor_submit',row['submit_file'],'-batch-name',batch_name]
+            try:
+                log.debug(" ".join(cmd))
+                check_call(cmd)
+            except subprocess.CalledProcessError as e:
+                log.warn("failed to submit file")
+                c.execute("UPDATE ntuplizer_jobs SET state = 'FAILED', message = ? WHERE id = ?", ("failed to submit job: %s" % str(e),id))
+            else:
+                log.notice("Successfully resubmitted job %i" % id)
+                c.execute("UPDATE ntuplizer_jobs SET state = 'RUNNING', nretry = COALESCE(nretry + 1,0) WHERE id = ?", (row['id'],))
+                njobs += 1
         elif state in ('SUCCESS','FAILED'):
             # Nothing to do here
             pass
