@@ -128,6 +128,7 @@ def main(conn, max_jobs):
             else:
                 log.notice("Successfully submitted job %i" % id)
                 c.execute("UPDATE ntuplizer_jobs SET state = 'RUNNING', nretry = ? WHERE id = ?", (0,id))
+                njobs += 1
         elif state == 'RUNNING':
             # check to see if it's completed
             job_status = get_job_status(row, data=data)
@@ -141,7 +142,6 @@ def main(conn, max_jobs):
                 # Success!
                 log.notice("Job %i completed successfully!" % id)
                 c.execute("UPDATE ntuplizer_jobs SET state = 'SUCCESS' WHERE id = ?", (id,))
-                njobs += 1
             elif job_status == 5:
                 # For now, I don't do anything for held jobs. I can mark them
                 # manually as failed or retry in the database.
