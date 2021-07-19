@@ -84,7 +84,7 @@ You can then browse the submissions in the sqlite database by running:
 
 ```console
 $ sqlite3 ~/state.db
-sqlite> select * from ntuplizer_jobs;
+sqlite> select timestamp, id, state from ntuplizer_jobs;
 ```
 
 Note that by default if you run create-condor-jobs twice, it will only add new
@@ -117,7 +117,7 @@ You can then check on any failed jobs by looking for them in the database:
 
 ```console
 $ sqlite3 ~/state.db
-sqlite> select * from ntuplizer_jobs where state = 'FAILED';
+sqlite> select timestamp, id, state from ntuplizer_jobs where state = 'FAILED';
 ```
 
 If it's some random issue, you can tell submit-condor-jobs to retry it by doing:
