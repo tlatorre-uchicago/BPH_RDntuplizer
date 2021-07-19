@@ -171,8 +171,8 @@ if __name__ == "__main__":
             output_file = join(args.output_file.replace('.root', '_%s_%i.root' % (batch_id.hex,i)))
             exec_args += ' %s' % output_file
             fsub.write('arguments      = %s\n' % exec_args)
-            log_file = '%s/out/job_%s_%i.out' % (outdir,batch_id.hex,i)
-            fsub.write('output         = %s\n' % log_file)
+            log_file = '%s/out/job_%s_%i.log' % (outdir,batch_id.hex,i)
+            fsub.write('output         = %s/out/job_%s_%i.out\n' % (outdir,batch_id.hex,i))
             fsub.write('error          = %s/out/job_%s_%i.err\n' % (outdir,batch_id.hex,i))
             fsub.write('log            = %s/out/job_%s_%i.log\n' % (outdir,batch_id.hex,i))
             fsub.write('+MaxRuntime    = %i\n' % maxRunTime)
