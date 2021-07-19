@@ -69,6 +69,7 @@ if __name__ == "__main__":
         "input_files    TEXT NOT NULL, "
         "batch_name     TEXT NOT NULL, "
         "uuid           TEXT NOT NULL, "
+        "batch_uuid     TEXT NOT NULL, "
         "state          TEXT NOT NULL, "
         "nretry         INTEGER,"
         "message        TEXT,"
@@ -154,28 +155,32 @@ if __name__ == "__main__":
     os.system('chmod +x %s/CMSSWCondorJob.sh' % job_submission_dir_path)
     print 'Creating submission scripts'
 
+    # generate a UUID to append to all the filenames so that if we run the same job
+    # twice we don't overwrite the first job
+    batch_id = uuid.uuid1()
+
     for i, files in enumerate(chunks(flist,args.nFilePerJob)):
         # generate a UUID to append to all the filenames so that if we run the same job
         # twice we don't overwrite the first job
         ID = uuid.uuid1()
 
-        with open(join(outdir,'cfg/file_list_%s_%i.txt' % (ID.hex,i)), 'w') as f:
+        with open(join(outdir,'cfg/file_list_%s_%i.txt' % (batch_id.hex,i)), 'w') as f:
             f.write('\n'.join(files) + '\n')
 
-        submit_file = os.path.realpath(join(outdir,'jobs_%s_%i.sub' % (ID.hex,i)))
+        submit_file = os.path.realpath(join(outdir,'jobs_%s_%i.sub' % (batch_id.hex,i)))
         with open(submit_file, 'w') as fsub:
             fsub.write('executable    = %s/CMSSWCondorJob.sh\n' % job_submission_dir_path)
 
             exec_args = job_submission_dir_path
             exec_args += ' %s' % os.path.realpath(args.config)
-            exec_args += ' %s' % join(outdir,'cfg/file_list_%s_%i.txt' % (ID.hex,i))
-            output_file = join(args.output_file.replace('.root', '_%s_%i.root' % (ID.hex,i)))
+            exec_args += ' %s' % join(outdir,'cfg/file_list_%s_%i.txt' % (batch_id.hex,i))
+            output_file = join(args.output_file.replace('.root', '_%s_%i.root' % (batch_id.hex,i)))
             exec_args += ' %s' % output_file
             fsub.write('arguments      = %s\n' % exec_args)
-            log_file = '%s/out/job_%s_%i.out\n' % (outdir,ID.hex,i)
+            log_file = '%s/out/job_%s_%i.out\n' % (outdir,batch_id.hex,i)
             fsub.write('output         = %s\n' % log_file)
-            fsub.write('error          = %s/out/job_%s_%i.err\n' % (outdir,ID.hex,i))
-            fsub.write('log            = %s/out/job_%s_%i.log\n' % (outdir,ID.hex,i))
+            fsub.write('error          = %s/out/job_%s_%i.err\n' % (outdir,batch_id.hex,i))
+            fsub.write('log            = %s/out/job_%s_%i.log\n' % (outdir,batch_id.hex,i))
             fsub.write('+MaxRuntime    = %i\n' % maxRunTime)
             if os.uname()[1] == 'login-1.hep.caltech.edu':
                 fsub.write('+RunAsOwner = True\n')
@@ -206,10 +211,11 @@ if __name__ == "__main__":
             "output_file    , "
             "input_files    , "
             "batch_name     , "
+            "batch_uuid     , "
             "uuid           , "
             "state          , "
             "nretry         ) "
-            "VALUES (?, ?, ?, ?, ?, ?, 'NEW', NULL)",
-            (submit_file, log_file, output_file, ','.join(files), '%s_%s' % (args.name,createBatchName(args)), ID.hex))
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 'NEW', NULL)",
+            (submit_file, log_file, output_file, ','.join(files), '%s_%s' % (args.name,createBatchName(args)), batch_id.hex, ID.hex))
 
     conn.commit()
