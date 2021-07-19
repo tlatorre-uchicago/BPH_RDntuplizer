@@ -4,20 +4,24 @@ import argparse
 import commands
 import time
 from glob import glob
+"""
+This is a short script to create submission files for the ntuplizer. To run it:
+
+    $ process="CP_BdToDstarMuNu_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen"
+    $ python jobSubmission/create-condor-jobs -i production/inputFiles_$process.txt -o ~/BPhysics/$process/ntuples/out_CAND.root -c config/cmssw_centralMC_Tag_B_MuDst-PiPiK.py --maxtime 30m -N 5 -f
+
+This will create the necessary job submission files and add new entries to the database ~/state.db. You can then run submit-condor-jobs to actually submit them.
+
+To browse the database you can run:
+
+    $ sqlite3 ~/state.db
+    sqlite> select * from ntuplizer_jobs;
+"""
 
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
         yield l[i:i + n]
-
-#____________________________________________________________________________________________________________
-### processing the external os commands
-def processCmd(cmd, quite = 0):
-    status, output = commands.getstatusoutput(cmd)
-    if (status !=0 and not quite):
-        print 'Error in processing command:\n   ['+cmd+']'
-        print 'Output:\n   ['+output+'] \n'
-    return output
 
 def createBatchName(a):
     try:
@@ -27,8 +31,6 @@ def createBatchName(a):
         n = a.maxtime
     return n
 
-#_____________________________________________________________________________________________________________
-#example line: python jobSubmission/submitCMSSWCondorJobs.py -i /eos/user/o/ocerri/BPhysics/data/cmsMC_private/BPH_Tag-B0_MuNuDmst-pD0bar-kp_13TeV-pythia8_SoftQCD_PTFilter5_0p0-evtgen_HQET2_central_PU35_10-2-3_v0/jobs_out/*MINIAODSIM*.root -o /afs/cern.ch/user/o/ocerri/cernbox/BPhysics/data/cmsMC_private/BPH_Tag-B0_MuNuDmst-pD0bar-kp_13TeV-pythia8_SoftQCD_PTFilter5_0p0-evtgen_HQET2_central_PU35_10-2-3_v0/MuDst_candidates/out.root -f -c config/cmssw_privateMC_Tag_MuDmst-pD0bar-kp.py --maxtime 8h -N 5 --name MC
 if __name__ == "__main__":
     import sqlite3
     from os.path import join
@@ -211,10 +213,3 @@ if __name__ == "__main__":
             (submit_file, log_file, output_file, ','.join(files), '%s_%s' % (args.name,createBatchName(args)), ID.hex))
 
     conn.commit()
-
-    #print 'Submitting jobs'
-    #cmd = 'condor_submit jobs.sub'
-    #cmd += ' -batch-name '+args.name+'_' + createBatchName(args)
-    #output = processCmd(cmd)
-    #print 'Job submitted'
-    #os.system('mv jobs.sub '+outdir+'/cfg/jobs.sub')
