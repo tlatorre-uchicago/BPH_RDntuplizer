@@ -6,10 +6,10 @@ import subprocess
 import json
 """
 This is a short script to help manage submitting jobs to the grid. To submit
-jobs first run the submitCMSSWCondorJobs.py script:
+jobs first run the create-condor-jobs script:
 
     $ process="CP_BdToDstarMuNu_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen"
-    $ python jobSubmission/submitCMSSWCondorJobs.py -i production/inputFiles_$process.txt -o ~/BPhysics/$process/ntuples/out_CAND.root -c config/cmssw_centralMC_Tag_B_MuDst-PiPiK.py --maxtime 30m -N 5 -f
+    $ python jobSubmission/create-condor-jobs -i production/inputFiles_$process.txt -o ~/BPhysics/$process/ntuples/out_CAND.root -c config/cmssw_centralMC_Tag_B_MuDst-PiPiK.py --maxtime 30m -N 5 -f
 
 or use the runNtuplizerOnMCSamples.sh shell script:
 
