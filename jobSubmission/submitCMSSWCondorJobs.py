@@ -39,7 +39,6 @@ if __name__ == "__main__":
     parser.add_argument ('-N', '--nFilePerJob', type=int, help='Number of files per job', default=10)
     parser.add_argument ('-i', '--input_file', type=str, default='', help='Input file template for glob or list in a txt format', nargs='+')
     parser.add_argument ('-o', '--output_file', type=str, default='', help='Output root file template')
-    parser.add_argument ('-f', '--force_production', action='store_true', default=False, help='Proceed even if output file is already existing')
     parser.add_argument ('-c', '--config', type=str, help='Config file for cmsRUn')
     parser.add_argument ('--maxtime', help='Max wall run time [s=seconds, m=minutes, h=hours, d=days]', default='8h')
     parser.add_argument ('--memory', help='min virtual memory in MB', default='2000')
@@ -88,25 +87,16 @@ if __name__ == "__main__":
         exit()
 
     if not args.output_file.endswith('.root'):
-        print 'Outputfile must end with .root'
+        print 'Output file must end with .root'
         exit()
 
     outdir = os.path.dirname(args.output_file)
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    else:
-        if os.listdir(outdir):
-            if args.force_production:
-                os.system('rm -rf ' + outdir + '/*')
-            else:
-                print 'Output directory not empty'
-                print 'Empty the given directory, change directory or run with -f'
-                exit()
 
-    os.makedirs(outdir+'/out/')
-    os.makedirs(outdir+'/cfg/')
-
+    os.makedirs(join(outdir,'out/'))
+    os.makedirs(join(outdir,'cfg/'))
 
     '''
     ################### Prepare input file and division #######################
@@ -132,7 +122,7 @@ if __name__ == "__main__":
         input_files = input_files.split(",")
 
         for filename in input_files:
-            if filenamein flist:
+            if filename in flist:
                 print("skipping %s because it's already done" % filename)
                 flist.remove(filename)
 
@@ -160,27 +150,27 @@ if __name__ == "__main__":
     print 'Creating submission scripts'
 
     for i, files in enumerate(chunks(flist,args.nFilePerJob)):
-        with open(join(outdir,'cfg/file_list_%i.txt' % i), 'w') as f:
+        # generate a UUID to append to all the filenames so that if we run the same job
+        # twice we don't overwrite the first job
+        ID = uuid.uuid1()
+
+        with open(join(outdir,'cfg/file_list_%s_%i.txt' % (ID.hex,i)), 'w') as f:
             f.write('\n'.join(files) + '\n')
 
-        submit_file = os.path.realpath(join(outdir,'jobs_%i.sub' % i))
+        submit_file = os.path.realpath(join(outdir,'jobs_%s_%i.sub' % (ID.hex,i)))
         with open(submit_file, 'w') as fsub:
-            # generate a UUID to append to all the filenames so that if we run the same job
-            # twice we don't overwrite the first job
-            ID = uuid.uuid1()
-
             fsub.write('executable    = %s/CMSSWCondorJob.sh\n' % job_submission_dir_path)
 
             exec_args = job_submission_dir_path
             exec_args += ' %s' % os.path.realpath(args.config)
-            exec_args += ' %s' % join(outdir,'cfg/file_list_%i.txt' % i)
-            output_file = join(args.output_file.replace('.root', '_%i.root' % i))
+            exec_args += ' %s' % join(outdir,'cfg/file_list_%s_%i.txt' % (ID.hex,i))
+            output_file = join(args.output_file.replace('.root', '_%s_%i.root' % (ID.hex,i)))
             exec_args += ' %s' % output_file
             fsub.write('arguments      = %s\n' % exec_args)
-            log_file = '%s/out/job_%i.out\n' % (outdir,i)
+            log_file = '%s/out/job_%s_%i.out\n' % (outdir,ID.hex,i)
             fsub.write('output         = %s\n' % log_file)
-            fsub.write('error          = %s/out/job_%i.err\n' % (outdir,i))
-            fsub.write('log            = %s/out/job_%i.log\n' % (outdir,i))
+            fsub.write('error          = %s/out/job_%s_%i.err\n' % (outdir,ID.hex,i))
+            fsub.write('log            = %s/out/job_%s_%i.log\n' % (outdir,ID.hex,i))
             fsub.write('+MaxRuntime    = %i\n' % maxRunTime)
             if os.uname()[1] == 'login-1.hep.caltech.edu':
                 fsub.write('+RunAsOwner = True\n')
