@@ -205,7 +205,7 @@ if __name__ == "__main__":
             fsub.write('max_retries    = 5\n')
             fsub.write('requirements   = Machine =!= LastRemoteHost && regexp("blade-.*", TARGET.Machine)\n')
             fsub.write('universe = vanilla\n')
-            fsub.write('queue %i\n' % Njobs)
+            fsub.write('queue 1\n')
 
         c.execute("INSERT INTO ntuplizer_jobs ("
             "submit_file    , "
