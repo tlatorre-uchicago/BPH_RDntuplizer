@@ -95,8 +95,11 @@ if __name__ == "__main__":
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
-    os.makedirs(join(outdir,'out/'))
-    os.makedirs(join(outdir,'cfg/'))
+    if not os.path.exists(join(outdir,'out')):
+        os.makedirs(join(outdir,'out'))
+
+    if not os.path.exists(join(outdir,'cfg')):
+        os.makedirs(join(outdir,'cfg'))
 
     '''
     ################### Prepare input file and division #######################
