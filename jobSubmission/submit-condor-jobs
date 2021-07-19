@@ -4,7 +4,7 @@ This is a short script to help manage submitting jobs to the grid. To submit
 jobs first run the create-condor-jobs script:
 
     $ process="CP_BdToDstarMuNu_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen"
-    $ python jobSubmission/create-condor-jobs -i production/inputFiles_$process.txt -o ~/BPhysics/$process/ntuples/out.root -c config/cmssw_centralMC_Tag_B_MuDst-PiPiK.py --maxtime 30m -N 5 -f
+    $ python jobSubmission/create-condor-jobs -i production/inputFiles_$process.txt -o ~/BPhysics/$process/ntuples/out_CAND.root -c config/cmssw_centralMC_Tag_B_MuDst-PiPiK.py --maxtime 30m -N 5 -f
 
 or use the runNtuplizerOnMCSamples.sh shell script:
 
@@ -18,11 +18,16 @@ Currently this script will *not* automatically resubmit any jobs but will
 instead mark any jobs that failed, and the user can then update the database to
 mark these as "RETRY".
 """
-from logger import Logger
 from subprocess import check_call, check_output
 from os.path import join
 import subprocess
 import json
+import os
+import sys
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(dir_path)
+from logger import Logger
 
 log = Logger()
 
