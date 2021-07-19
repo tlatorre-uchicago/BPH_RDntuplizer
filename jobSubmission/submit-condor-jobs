@@ -93,7 +93,7 @@ def get_job_status(row, data=None):
                 log.warn("Log file '%s' doesn't contain the string 'return value 0'. Assuming job failed." % row['log_file'])
                 return 7
     except IOError:
-        log.debug("Log file '%s' doesn't exist. Assuming job hasn't started running." % log_file)
+        log.debug("Log file '%s' doesn't exist. Assuming job hasn't started running." % row['log_file'])
         return 2
 
     try:
