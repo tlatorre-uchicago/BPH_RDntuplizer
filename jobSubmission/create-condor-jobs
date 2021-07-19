@@ -41,12 +41,13 @@ if __name__ == "__main__":
     parser.add_argument ('-N', '--nFilePerJob', type=int, help='Number of files per job', default=10)
     parser.add_argument ('-i', '--input_file', type=str, default='', help='Input file template for glob or list in a txt format', nargs='+')
     parser.add_argument ('-o', '--output_file', type=str, default='', help='Output root file template')
-    parser.add_argument ('-c', '--config', type=str, help='Config file for cmsRUn')
+    parser.add_argument ('-c', '--config', required=True, type=str, help='Config file for cmsRUn')
     parser.add_argument ('--maxtime', help='Max wall run time [s=seconds, m=minutes, h=hours, d=days]', default='8h')
     parser.add_argument ('--memory', help='min virtual memory in MB', default='2000')
     parser.add_argument ('--disk', type=int, help='min disk space in MB', default=4000)
     parser.add_argument ('--cpu', type=int, help='cpu threads', default=1)
     parser.add_argument ('--name', type=str, default='ntuples', help='Job batch name')
+    parser.add_argument ('-f', '--force', action='store_true', default=False, help='Force reprocessing')
     parser.add_argument("--db", type=str, help="database file", default=None)
 
     args = parser.parse_args()
@@ -121,30 +122,25 @@ if __name__ == "__main__":
     elif isinstance(args.input_file, list):
         flist = args.input_file
 
-    results = c.execute('SELECT id, input_files FROM ntuplizer_jobs ORDER BY timestamp ASC')
+    if not args.force:
+        results = c.execute('SELECT id, input_files FROM ntuplizer_jobs ORDER BY timestamp ASC')
 
-    for row in results.fetchall():
-        id, input_files = row
-        input_files = input_files.split(",")
+        for row in results.fetchall():
+            id, input_files = row
+            input_files = input_files.split(",")
 
-        for filename in input_files:
-            if filename in flist:
-                print("skipping %s because it's already done" % filename)
-                flist.remove(filename)
+            for filename in input_files:
+                if filename in flist:
+                    print("skipping %s because it's already done" % filename)
+                    flist.remove(filename)
 
     '''
     ###################### Check CMSSW and config ############################
     '''
 
-    if not args.config:
-        print 'No config file provided'
-        exit()
     if not os.path.exists(args.config):
-        print 'Config non existing'
+        print >> sys.stderr, "Couldn't find config file '%s'" % args.config
         exit()
-
-    ntuplizer_loc = os.environ['PWD']
-
 
     ''' ###################### Creating the sub #############################'''
     time_scale = {'s':1, 'm':60, 'h':60*60, 'd':60*60*24}
