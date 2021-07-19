@@ -5,6 +5,11 @@ import commands
 import time
 from glob import glob
 
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
 #____________________________________________________________________________________________________________
 ### processing the external os commands
 def processCmd(cmd, quite = 0):
@@ -131,18 +136,6 @@ if __name__ == "__main__":
                 print("skipping %s because it's already done" % filename)
                 flist.remove(filename)
 
-    rem = len(flist) % args.nFilePerJob
-    Njobs = len(flist)/args.nFilePerJob
-    if rem:
-        Njobs += 1
-
-    print 'Input file provided:', len(flist)
-    print 'Will be divided into', Njobs, 'jobs'
-
-    if Njobs == 0:
-        print("No jobs to run")
-        exit()
-
     '''
     ###################### Check CMSSW and config ############################
     '''
@@ -166,10 +159,7 @@ if __name__ == "__main__":
     os.system('chmod +x %s/CMSSWCondorJob.sh' % job_submission_dir_path)
     print 'Creating submission scripts'
 
-    for i in range(Njobs):
-        i_start = i*args.nFilePerJob
-        i_end = min((i+1)*args.nFilePerJob, len(flist))
-        files = flist[i_start:i_end]
+    for i, files in enumerate(chunks(flist,args.nFilePerJob)):
         with open(join(outdir,'cfg/file_list_%i.txt' % i), 'w') as f:
             f.write('\n'.join(files) + '\n')
 
