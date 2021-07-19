@@ -32,7 +32,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument ('-N', '--nFilePerJob', type=int, help='Number of files per job', default=10)
-    parser.add_argument ('--nMaxJobs', type=int, help='Maximum number of jobs that will be submitted', default=None)
     parser.add_argument ('-i', '--input_file', type=str, default='', help='Input file template for glob or list in a txt format', nargs='+')
     parser.add_argument ('-o', '--output_file', type=str, default='', help='Output root file template')
     parser.add_argument ('-f', '--force_production', action='store_true', default=False, help='Proceed even if output file is already existing')
@@ -61,6 +60,7 @@ if __name__ == "__main__":
         "submit_file    TEXT NOT NULL UNIQUE, "
         "log_file       TEXT NOT NULL UNIQUE, "
         "output_file    TEXT NOT NULL UNIQUE, "
+        "input_files    TEXT NOT NULL, "
         "batch_name     TEXT NOT NULL, "
         "uuid           TEXT NOT NULL, "
         "state          TEXT NOT NULL, "
@@ -120,6 +120,17 @@ if __name__ == "__main__":
     elif isinstance(args.input_file, list):
         flist = args.input_file
 
+    results = c.execute('SELECT id, input_files FROM ntuplizer_jobs ORDER BY timestamp ASC')
+
+    for row in results.fetchall():
+        id, input_files = row
+        input_files = input_files.split(",")
+
+        for filename in input_files:
+            if filenamein flist:
+                print("skipping %s because it's already done" % filename)
+                flist.remove(filename)
+
     rem = len(flist) % args.nFilePerJob
     Njobs = len(flist)/args.nFilePerJob
     if rem:
@@ -127,19 +138,10 @@ if __name__ == "__main__":
 
     print 'Input file provided:', len(flist)
     print 'Will be divided into', Njobs, 'jobs'
-    for i in range(Njobs):
-        i_start = i*args.nFilePerJob
-        i_end = min((i+1)*args.nFilePerJob, len(flist))
-        aux = '\n'.join(flist[i_start:i_end])
-        with open(join(outdir,'cfg/file_list_%i.txt' % i), 'w') as f:
-            f.write(aux+'\n')
 
-    if args.nMaxJobs:
-        print 'Max number of jobs set to ', args.nMaxJobs
-        if args.nMaxJobs < Njobs:
-            Njobs = args.nMaxJobs
-            print 'Only', Njobs, 'will be submitted'
-    if Njobs == 0: exit()
+    if Njobs == 0:
+        print("No jobs to run")
+        exit()
 
     '''
     ###################### Check CMSSW and config ############################
@@ -165,6 +167,12 @@ if __name__ == "__main__":
     print 'Creating submission scripts'
 
     for i in range(Njobs):
+        i_start = i*args.nFilePerJob
+        i_end = min((i+1)*args.nFilePerJob, len(flist))
+        files = flist[i_start:i_end]
+        with open(join(outdir,'cfg/file_list_%i.txt' % i), 'w') as f:
+            f.write('\n'.join(files) + '\n')
+
         submit_file = os.path.realpath(join(outdir,'jobs_%i.sub' % i))
         with open(submit_file, 'w') as fsub:
             # generate a UUID to append to all the filenames so that if we run the same job
@@ -211,12 +219,13 @@ if __name__ == "__main__":
             "submit_file    , "
             "log_file       , "
             "output_file    , "
+            "input_files    , "
             "batch_name     , "
             "uuid           , "
             "state          , "
             "nretry         ) "
-            "VALUES (?, ?, ?, ?, ?, 'NEW', NULL)",
-            (submit_file, log_file, output_file, '%s_%s' % (args.name,createBatchName(args)), ID.hex))
+            "VALUES (?, ?, ?, ?, ?, ?, 'NEW', NULL)",
+            (submit_file, log_file, output_file, ','.join(files), '%s_%s' % (args.name,createBatchName(args)), ID.hex))
 
     conn.commit()
 
