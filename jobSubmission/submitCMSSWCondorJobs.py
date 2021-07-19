@@ -60,8 +60,8 @@ if __name__ == "__main__":
         "timestamp      DATETIME DEFAULT CURRENT_TIMESTAMP, "
         "submit_file    TEXT NOT NULL, "
         "log_file       TEXT NOT NULL, "
+        "output_file    TEXT NOT NULL, "
         "batch_name     TEXT NOT NULL, "
-        "output         TEXT NOT NULL, "
         "uuid           TEXT NOT NULL, "
         "state          TEXT NOT NULL, "
         "nretry         INTEGER,"
@@ -173,7 +173,8 @@ if __name__ == "__main__":
 
             fsub.write('executable    = %s/CMSSWCondorJob.sh\n' % job_submission_dir_path)
 
-            exec_args = os.path.realpath(args.config)
+            exec_args = job_submission_dir_path
+            exec_args += ' %s' % os.path.realpath(args.config)
             exec_args += ' %s' % join(outdir,'cfg/file_list_%i.txt' % i)
             output_file = join(args.output_file.replace('.root', '_%i.root' % i))
             exec_args += ' %s' % output_file
@@ -194,7 +195,7 @@ if __name__ == "__main__":
                 fsub.write('request_memory = ifthenelse(MemoryUsage =!= undefined, MAX({{MemoryUsage + 1024, {0}}}), {0})\n'.format(args.memory)) # Dynamic allocation
                 fsub.write('RequestCpus = %i\n' % args.cpu)
             fsub.write('+JobBatchName  = %s\n' % args.name)
-            fsub.write('+UUID  = %s\n' % ID.hex)
+            fsub.write('+UUID  = "%s"\n' % ID.hex)
             fsub.write('x509userproxy  = $ENV(X509_USER_PROXY)\n')
             fsub.write('on_exit_remove = (ExitBySignal == False) && (ExitCode == 0)\n')
             # Send the job to Held state on failure.

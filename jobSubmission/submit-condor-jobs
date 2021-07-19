@@ -1,6 +1,24 @@
 #!/usr/bin/env python
 from logger import Logger
 from subprocess import check_call, check_output
+from os.path import join
+import subprocess
+
+log = Logger()
+
+def get_njobs():
+    """
+    Returns the total number of jobs in the job queue.
+    """
+    log.debug("condor_q -json")
+    output = check_output(["condor_q","-json"])
+
+    if not output:
+        return 0
+
+    data = json.loads(output)
+
+    return len(data)
 
 def get_job_status(row, data=None):
     """
@@ -68,10 +86,12 @@ def get_job_status(row, data=None):
 
     return 7
 
-def main(conn):
+def main(conn, max_jobs):
     c = conn.cursor()
 
     results = c.execute('SELECT id, submit_file, log_file, output_file, batch_name, uuid, state, nretry FROM ntuplizer_jobs ORDER BY timestamp ASC')
+
+    njobs = get_njobs()
 
     stats = {}
 
@@ -92,17 +112,21 @@ def main(conn):
             stats[state] += 1
 
         if state == 'NEW':
+            if njobs >= max_jobs:
+                log.verbose("Skipping job %i because there are already %i jobs in the queue" % (id,njobs))
+                continue
+
             log.notice("submitting %s\n" % submit_file)
-            cmd = ['condor_submit','jobs.sub','-batch-name',batch_name])
+            cmd = ['condor_submit',row['submit_file'],'-batch-name',batch_name]
             try:
-                log.debug("condor_submit %s" % tail)
+                log.debug(" ".join(cmd))
                 check_call(cmd)
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as e:
                 log.warn("failed to submit file")
-                c.execute("UPDATE state SET state = 'FAILED', message = ? WHERE id = ?", ("failed to submit job: %s" % str(e),id))
+                c.execute("UPDATE ntuplizer_jobs SET state = 'FAILED', message = ? WHERE id = ?", ("failed to submit job: %s" % str(e),id))
             else:
                 log.notice("Successfully submitted job %i" % id)
-                c.execute("UPDATE state SET state = 'RUNNING', nretry = ? WHERE id = ?", submit_file,0,id))
+                c.execute("UPDATE ntuplizer_jobs SET state = 'RUNNING', nretry = ? WHERE id = ?", (0,id))
         elif state == 'RUNNING':
             # check to see if it's completed
             job_status = get_job_status(row, data=data)
@@ -111,17 +135,18 @@ def main(conn):
                 # nothing to do!
                 log.verbose("Still waiting for job %i to finish" % id)
             elif job_status == 3:
-                c.execute("UPDATE state SET state = 'FAILED', message = ? WHERE id = ?", ("job was removed",id))
+                c.execute("UPDATE ntuplizer_jobs SET state = 'FAILED', message = ? WHERE id = ?", ("job was removed",id))
             elif job_status == 8:
                 # Success!
                 log.notice("Job %i completed successfully!" % id)
-                c.execute("UPDATE state SET state = 'SUCCESS' WHERE id = ?", (id,))
+                c.execute("UPDATE ntuplizer_jobs SET state = 'SUCCESS' WHERE id = ?", (id,))
+                njobs += 1
             elif job_status == 5:
                 # For now, I don't do anything for held jobs. I can mark them
                 # manually as failed or retry in the database.
                 pass
             elif job_status == 7:
-                c.execute("UPDATE state SET state = 'FAILED', message = ? WHERE id = ?", ("job failed", id))
+                c.execute("UPDATE ntuplizer_jobs SET state = 'FAILED', message = ? WHERE id = ?", ("job failed", id))
             else:
                 # Don't know what to do here for Removed or Submission_err
                 log.warn("Job %i is in the state %i. Don't know what to do." % (id, job_status))
@@ -145,6 +170,7 @@ if __name__ == '__main__':
     import sqlite3
     import traceback
     import datetime
+    import sys
 
     parser = argparse.ArgumentParser("submit grid jobs", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--db", type=str, help="database file", default=None)
@@ -153,6 +179,7 @@ if __name__ == '__main__':
                         default='notice')
     parser.add_argument('--logfile', default=None, help="filename for log file")
     parser.add_argument('--max-retries', type=int, default=2, help="maximum number of times to try and resubmit a grid job")
+    parser.add_argument('--max-jobs', type=int, default=100, help="maximum number of jobs in the grid queue at any time")
     args = parser.parse_args()
 
     log.set_verbosity(args.loglevel)
@@ -170,46 +197,11 @@ if __name__ == '__main__':
 
     c = conn.cursor()
 
-    if args.auto:
-        try:
-            main(conn)
-            conn.commit()
-            conn.close()
-        except Exception as e:
-            log.warn(traceback.format_exc())
-            sys.exit(1)
-        sys.exit(0)
-
-    cmd = 'SELECT * FROM state WHERE state in ("NEW","RETRY") ORDER BY priority DESC, timestamp ASC'
-
-    if args.n:
-        cmd += ' LIMIT %i' % args.n
-
-    results = c.execute(cmd).fetchall()
-
-    if len(results) == 0:
-        print("No more jobs!")
-        sys.exit(0)
-
-    submit_string = create_submit_file(results, sddm_data, dqxx_dir)
-
-    date_string = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-
-    submit_filename = "condor_submit_%s.submit" % date_string
-
-    print("Writing %s" % submit_filename)
-    with open(submit_filename, "w") as f:
-        f.write(submit_string)
-
-    if not args.dry_run:
-        print("Submitting %s" % submit_filename)
-        try:
-            # Send stdout and stderr to /dev/null
-            log.debug("condor_submit %s" % submit_filename)
-            check_call(["condor_submit",submit_filename])
-        except subprocess.CalledProcessError:
-            raise
-        else:
-            for row in results:
-                c.execute("UPDATE state SET state = 'RUNNING', nretry = COALESCE(nretry + 1,0) WHERE id = ?", (row['id'],))
-            conn.commit()
+    try:
+        main(conn, args.max_jobs)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        log.warn(traceback.format_exc())
+        sys.exit(1)
+    sys.exit(0)
