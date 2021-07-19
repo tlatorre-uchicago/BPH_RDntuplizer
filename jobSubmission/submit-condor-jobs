@@ -24,6 +24,7 @@ import subprocess
 import json
 import os
 import sys
+import ROOT
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path)
