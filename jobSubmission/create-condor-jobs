@@ -1,9 +1,4 @@
 #!/usr/bin/env python
-import os, sys, subprocess, re
-import argparse
-import commands
-import time
-from glob import glob
 """
 This is a short script to create submission files for the ntuplizer. To run it:
 
@@ -17,6 +12,7 @@ To browse the database you can run:
     $ sqlite3 ~/state.db
     sqlite> select * from ntuplizer_jobs;
 """
+import os, sys, subprocess, re
 
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
@@ -35,6 +31,8 @@ if __name__ == "__main__":
     import sqlite3
     from os.path import join
     import uuid
+    from glob import glob
+    import argparse
 
     parser = argparse.ArgumentParser()
 
