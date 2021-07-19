@@ -159,10 +159,10 @@ if __name__ == "__main__":
     time_scale = {'s':1, 'm':60, 'h':60*60, 'd':60*60*24}
     maxRunTime = int(args.maxtime[:-1]) * time_scale[args.maxtime[-1]]
 
+    job_submission_dir_path = os.path.dirname(os.path.realpath(__file__))
+
     os.system('chmod +x %s/CMSSWCondorJob.sh' % job_submission_dir_path)
     print 'Creating submission scripts'
-
-    job_submission_dir_path = os.path.dirname(os.path.realpath(__file__))
 
     for i in range(Njobs):
         submit_file = os.path.realpath(join(outdir,'jobs_%i.sub' % i))
