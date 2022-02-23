@@ -22,6 +22,11 @@
 
 #include "VtxUtils.hh"
 
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackBase.h"
+#include "TMatrixDSym.h"
+#include "TVectorD.h"
+
 #define __pThad_min__ 0.6 // loose cut
 #define __dzMax__ 1.0
 #define __dRMax__ 2.0
@@ -129,6 +134,36 @@ void B2DstMuDecayTreeProducer::produce(edm::Event& iEvent, const edm::EventSetup
     unique_ptr<map<string, vector<float>>> outputVecNtuplizer(new map<string, vector<float>>);
 
     int n_mu = 0, n_K = 0, n_pi = 0, n_D0 = 0, n_pis = 0, n_Dst = 0, n_B = 0;
+
+    unsigned int i, j, k;
+
+    for (i = 0; i < pfCandHandle->size(); i++) {
+        const pat::PackedCandidate &pc = (*pfCandHandle)[i];
+        if (!pc.hasTrackDetails()) continue;
+        if (pc.pt() < 0.6) continue;
+        auto tk = pc.bestTrack();
+
+        double min_eig = 1;
+
+        /* Get the original covariance matrix. */
+        reco::TrackBase::CovarianceMatrix cov = tk->covariance();
+
+        /* Convert it from an SMatrix to a TMatrixD so we can get the eigenvalues. */
+        TMatrixDSym new_cov(cov.kRows);
+        for (j = 0; j < cov.kRows; j++)
+            for (k = 0; k < cov.kRows; k++)
+                new_cov(j,k) = cov(j,k);
+
+        /* Get the eigenvalues. */
+        TVectorD eig(cov.kRows);
+        new_cov.EigenVectors(eig);
+        for (j = 0; j < cov.kRows; j++)
+            if (eig(j) < min_eig)
+                min_eig = eig(j);
+
+        if (min_eig < 0)
+            fprintf(stderr, "found negative eigenvalue run = %i, lumi = %i, event number = %lld\n", iEvent.run(), iEvent.luminosityBlock(), iEvent.id().event());
+    }
 
     if (verbose) {cout <<"-------------------- Evt -----------------------\n";}
     vector<bool> countersFlag(counters.size(), false);
