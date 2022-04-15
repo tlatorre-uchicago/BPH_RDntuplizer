@@ -455,6 +455,7 @@ HammerWeightsProducer::HammerWeightsProducer(const edm::ParameterSet &iConfig)
     centralValuesOpt += "}";
     if (verbose) {cout << "[Hammer]: CLN central values\n\t" << centralValuesOpt << endl;}
     hammer.setOptions(centralValuesOpt);
+    hammer.specializeWCInWeights("BtoD*CLNVar",{{"SM", 1.0}});
 
     // ################# BLPR for D* ##############################
     centralValuesOpt = "BtoD*BLPRVar: {";
@@ -464,6 +465,7 @@ HammerWeightsProducer::HammerWeightsProducer(const edm::ParameterSet &iConfig)
     centralValuesOpt += "}";
     if (verbose) {cout << "[Hammer]: BLPR central values\n\t" << centralValuesOpt << endl;}
     hammer.setOptions(centralValuesOpt);
+    hammer.specializeWCInWeights("BtoD*BLPRVar",{{"SM", 1.0}});
 
     // ################# BGL for D* ##############################
     centralValuesOpt = "BtoD*BGLVar: {";
@@ -492,6 +494,7 @@ HammerWeightsProducer::HammerWeightsProducer(const edm::ParameterSet &iConfig)
     centralValuesOpt += "}";
     if (verbose) {cout << "[Hammer]: BGL additional settings\n\t" << centralValuesOpt << endl;}
     hammer.setOptions(centralValuesOpt);
+    hammer.specializeWCInWeights("BtoD*BGLVar",{{"SM", 1.0}});
 
 
     // ################# BLR for D** ##############################
@@ -502,6 +505,7 @@ HammerWeightsProducer::HammerWeightsProducer(const edm::ParameterSet &iConfig)
     centralValuesOpt += "}";
     if (verbose) {cout << "[Hammer]: BLR for D** central values\n\t" << centralValuesOpt << endl;}
     hammer.setOptions(centralValuesOpt);
+    hammer.specializeWCInWeights("BtoD**nBLRVar",{{"SM", 1.0}});
 
     centralValuesOpt = "BtoD**wBLRVar: {";
     for(auto i=0; i<5; i++) {
@@ -510,6 +514,7 @@ HammerWeightsProducer::HammerWeightsProducer(const edm::ParameterSet &iConfig)
     centralValuesOpt += "}";
     if (verbose) {cout << "[Hammer]: BLR for D** central values\n\t" << centralValuesOpt << endl;}
     hammer.setOptions(centralValuesOpt);
+    hammer.specializeWCInWeights("BtoD**wBLRVar",{{"SM", 1.0}});
 
 
     // ################# BLOP for D(2S) ##############################
@@ -520,6 +525,7 @@ HammerWeightsProducer::HammerWeightsProducer(const edm::ParameterSet &iConfig)
     centralValuesOpt += "}";
     if (verbose) {cout << "[Hammer]: BLOP for D(2S) central values\n\t" << centralValuesOpt << endl;}
     hammer.setOptions(centralValuesOpt);
+    hammer.specializeWCInWeights("BtoD2sallBLOPVar",{{"SM", 1.0}});
 
 
     // ######## Products declaration ####################
