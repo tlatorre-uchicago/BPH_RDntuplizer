@@ -455,7 +455,8 @@ HammerWeightsProducer::HammerWeightsProducer(const edm::ParameterSet &iConfig)
     centralValuesOpt += "}";
     if (verbose) {cout << "[Hammer]: CLN central values\n\t" << centralValuesOpt << endl;}
     hammer.setOptions(centralValuesOpt);
-    hammer.specializeWCInWeights("BtoD*CLNVar",{{"SM", 1.0}});
+    hammer.specializeWCInWeights("BtoCTauNu",{{"SM", 1.0}});
+    hammer.specializeWCInWeights("BtoCMuNu",{{"SM", 1.0}});
 
     // ################# BLPR for D* ##############################
     centralValuesOpt = "BtoD*BLPRVar: {";
