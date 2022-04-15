@@ -159,8 +159,6 @@ void B2DstMuDecayTreeProducer::produce(edm::Event& iEvent, const edm::EventSetup
       possibleVtxs.push_back(vtx);
     }
 
-    int valid[10000];
-
     if (verbose) {cout <<"-------------------- Evt -----------------------\n";}
     vector<bool> countersFlag(counters.size(), false);
     counters[0]++;
@@ -175,6 +173,8 @@ void B2DstMuDecayTreeProducer::produce(edm::Event& iEvent, const edm::EventSetup
 
       if (!trgMu.isMediumMuon()) continue;
       updateCounter(2, countersFlag);
+
+      int *valid = (int *) malloc(sizeof(int)*N_pfCand);
 
       n_mu++;
       /* Create an array which tells us whether each track is potentially
