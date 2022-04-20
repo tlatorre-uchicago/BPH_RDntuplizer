@@ -86,7 +86,7 @@ if __name__ == '__main__':
                 if os.path.exists(output_dir):
                     print(bcolors.FAIL + "Warning: output directory '%s' already exists!" % output_dir + bcolors.ENDC)
                 os.system("mkdir -p %s" % output_dir)
-                cmd = "python %s/create-condor-jobs -i production/inputFiles_%s.txt -o %s/out_CAND.root -c %s/../config/%s -t %s -N %s --maxtime %s" % (FILE_PATH, process,output_dir,FILE_PATH,config,ntuplesName,n_files_per_job,max_time)
+                cmd = "python %s/create-condor-jobs -i %s/../production/inputFiles_%s.txt -o %s/out_CAND.root -c %s/../config/%s -t %s -N %s --maxtime %s" % (FILE_PATH, FILE_PATH,process,output_dir,FILE_PATH,config,ntuplesName,n_files_per_job,max_time)
                 print(cmd)
                 os.system(cmd)
                 sleep(1)
@@ -99,7 +99,7 @@ if __name__ == '__main__':
                 n_files_per_job = 40
                 max_run_time = '48h'
                 nice = 1
-                cmd = "python %s/create-condor-jobs -i production/inputFiles_ParkingBPH%i_Run2018D-05May2019promptD-v1_MINIAOD.txt -o %s/out_CAND.root -c %s/../config/%s -t %s -N %i --maxtime %s --nice %i" % (FILE_PATH, i,output_dir,FILE_PATH,config,ntuplesName,n_files_per_job,max_run_time,nice)
+                cmd = "python %s/create-condor-jobs -i %s/../production/inputFiles_ParkingBPH%i_Run2018D-05May2019promptD-v1_MINIAOD.txt -o %s/out_CAND.root -c %s/../config/%s -t %s -N %i --maxtime %s --nice %i" % (FILE_PATH, FILE_PATH,i,output_dir,FILE_PATH,config,ntuplesName,n_files_per_job,max_run_time,nice)
                 print(cmd)
                 os.system(cmd)
                 sleep(1)
