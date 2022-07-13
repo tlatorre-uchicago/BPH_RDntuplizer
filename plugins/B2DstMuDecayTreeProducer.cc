@@ -138,6 +138,7 @@ void B2DstMuDecayTreeProducer::produce(edm::Event& iEvent, const edm::EventSetup
     int n_mu = 0, n_K = 0, n_pi = 0, n_D0 = 0, n_pis = 0, n_Dst = 0, n_B = 0;
 
     vector<reco::Vertex> possibleVtxs = {};
+    vector<int> possibleVtxs_indexes = {};
     for(uint i_vtx = 0; i_vtx<vtxHandle->size(); i_vtx++) {
       auto vtx = (*vtxHandle)[i_vtx];
       /* Cut on the number of degrees of freedom. The number of degrees of
@@ -159,7 +160,10 @@ void B2DstMuDecayTreeProducer::produce(edm::Event& iEvent, const edm::EventSetup
        *  excess of vertices with low ndof in data. */
       if (vtx.ndof() <= 4) continue;
       reco::Vertex tmp = vtxu::refit_vertex(iEvent, iSetup, i_vtx, 0, *pfCandHandle);
-      if (tmp.isValid()) possibleVtxs.push_back(tmp);
+      if (tmp.isValid()) {
+        possibleVtxs.push_back(tmp);
+        possibleVtxs_indexes.push_back(i_vtx);
+      }
       // else {
         // cout << "[WARNING] Invalid vertex refit for " << i_vtx << endl;
         // possibleVtxs.push_back(vtx);
@@ -390,6 +394,21 @@ void B2DstMuDecayTreeProducer::produce(edm::Event& iEvent, const edm::EventSetup
               }
             }
             auto bestVtx = possibleVtxs[i_best];
+
+            for (i = 0; i < pfCandHandle.size(); i++) {
+                const pat::PackedCandidate &ptk = pfCandHandle[i];
+
+                if (!ptk.hasTrackDetails()) continue;
+                if (ptk.pt() < 0.5) continue;
+
+                if (ptk.fromPV(possibleVtxs_indexes[i_best]) < 3) continue;
+
+                auto tk = ptk.bestTrack();
+                (*outputVecNtuplizer)["PV_track_pt"].push_back(ptk.pt());
+                (*outputVecNtuplizer)["PV_track_chi2"].push_back(tk.chi2());
+                (*outputVecNtuplizer)["PV_track_ndof"].push_back(tk.ndof());
+                (*outputVecNtuplizer)["PV_track_eta"].push_back(tk.eta());
+            }
 
             (*outputVecNtuplizer)["N_goodVtx"].push_back(possibleVtxs.size());
 
